@@ -11,6 +11,8 @@ cloudinary.config({
   api_secret: process.env.CLOUD_API_SECRECT,
 });
 
+
+
 async function handleUpload(file) {
   const res = await cloudinary.uploader.upload(file, {
     resource_type: "auto",
@@ -22,6 +24,26 @@ const storage = new multer.memoryStorage();
 const upload = multer({
   storage,
 });
+
+
+// to run locally create uploads folder and to store image in local folder uncomment below line and comment above line
+
+// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// const storage = multer.diskStorage({
+//   destination: function (req, file, cb) {
+//     cb(null, 'uploads/');
+//   },
+//   filename: function (req, file, cb) {
+//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+//     cb(null, uniqueSuffix + path.extname(file.originalname));
+//   }
+// });
+
+// const upload = multer({ storage: storage });
+
+
+
 async function connectToDb() {
   try {
     mongoose.connect(process.env.MONGODBURL, {});
@@ -50,6 +72,10 @@ app.post("/addproduct", upload.single("image"), async (req, res) => {
     const { name, category, description, quantity, selling_price, cost_price } =
       req.body;
 
+
+      // to store image locally uncomment below
+      // const image = req.file.filename;
+
     const b64 = Buffer.from(req.file.buffer).toString("base64");
     let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
     const cldRes = await handleUpload(dataURI);
@@ -61,7 +87,10 @@ app.post("/addproduct", upload.single("image"), async (req, res) => {
       quantity,
       selling_price,
       cost_price,
+      // commet below line to run locally
       image: cldRes.url,
+      // uncomment below line
+      // image
     });
 
     // Save the document to the database
@@ -128,6 +157,15 @@ app.put("/addproduct", upload.single("image"), async (req, res) => {
       cldRes = await handleUpload(dataURI); // Set image if file is uploaded
     }
 
+      // uncomment below line and comment above line
+
+    // let image = null; // Initialize image variable
+
+    // if (req?.file) {
+    //     image = req.file.filename; // Set image if file is uploaded
+    // }
+
+
     const formData = await Addproduct.findByIdAndUpdate(
       id,
       {
@@ -139,6 +177,8 @@ app.put("/addproduct", upload.single("image"), async (req, res) => {
           selling_price,
           cost_price,
           ...(cldRes && { image: cldRes.url }),
+          // uncomment below line
+          // ...(image && { image }),
         },
       },
       { new: true }
