@@ -20,27 +20,27 @@ async function handleUpload(file) {
   return res;
 }
 
-const storage = new multer.memoryStorage();
-const upload = multer({
-  storage,
-});
+// const storage = new multer.memoryStorage();
+// const upload = multer({
+//   storage,
+// });
 
 
 // to run locally create uploads folder and to store image in local folder uncomment below line and comment above line
+const path = require("path");
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'uploads/');
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
 
-// const storage = multer.diskStorage({
-//   destination: function (req, file, cb) {
-//     cb(null, 'uploads/');
-//   },
-//   filename: function (req, file, cb) {
-//     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-//     cb(null, uniqueSuffix + path.extname(file.originalname));
-//   }
-// });
-
-// const upload = multer({ storage: storage });
+const upload = multer({ storage: storage });
 
 
 
@@ -55,8 +55,8 @@ async function connectToDb() {
 connectToDb();
 
 app.use(express.json());
-// const path = require("path");
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 
 const port = process.env.PORT || 5000;
 var cors = require("cors");
@@ -74,11 +74,14 @@ app.post("/addproduct", upload.single("image"), async (req, res) => {
 
 
       // to store image locally uncomment below
-      // const image = req.file.filename;
+      const image = req.file.filename;
 
-    const b64 = Buffer.from(req.file.buffer).toString("base64");
-    let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-    const cldRes = await handleUpload(dataURI);
+
+      // uncomment below line
+
+    // const b64 = Buffer.from(req.file.buffer).toString("base64");
+    // let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+    // const cldRes = await handleUpload(dataURI);
 
     const formData = new Addproduct({
       name,
@@ -88,9 +91,9 @@ app.post("/addproduct", upload.single("image"), async (req, res) => {
       selling_price,
       cost_price,
       // commet below line to run locally
-      image: cldRes.url,
+      // image: cldRes.url,
       // uncomment below line
-      // image
+      image
     });
 
     // Save the document to the database
@@ -149,21 +152,22 @@ app.put("/addproduct", upload.single("image"), async (req, res) => {
       cost_price,
     } = req.body;
 
-    let cldRes;
+    // comment below line
+    // let cldRes;
 
-    if (req?.file) {
-      const b64 = Buffer.from(req.file.buffer).toString("base64");
-      let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
-      cldRes = await handleUpload(dataURI); // Set image if file is uploaded
-    }
+    // if (req?.file) {
+    //   const b64 = Buffer.from(req.file.buffer).toString("base64");
+    //   let dataURI = "data:" + req.file.mimetype + ";base64," + b64;
+    //   cldRes = await handleUpload(dataURI); // Set image if file is uploaded
+    // }
 
       // uncomment below line and comment above line
 
-    // let image = null; // Initialize image variable
+    let image = null; // Initialize image variable
 
-    // if (req?.file) {
-    //     image = req.file.filename; // Set image if file is uploaded
-    // }
+    if (req?.file) {
+        image = req.file.filename; // Set image if file is uploaded
+    }
 
 
     const formData = await Addproduct.findByIdAndUpdate(
@@ -176,9 +180,10 @@ app.put("/addproduct", upload.single("image"), async (req, res) => {
           quantity,
           selling_price,
           cost_price,
-          ...(cldRes && { image: cldRes.url }),
+          // comment below line
+          // ...(cldRes && { image: cldRes.url }),
           // uncomment below line
-          // ...(image && { image }),
+          ...(image && { image }),
         },
       },
       { new: true }
@@ -195,6 +200,7 @@ app.put("/addproduct", upload.single("image"), async (req, res) => {
       .status(200)
       .json({ message: `Product modified successfully` });
   } catch (error) {
+    console.log(error);
     res.status(400).json({ message: `Something went wrong` });
   }
 });
